@@ -3,37 +3,44 @@ import type { CSSProperties } from 'react';
 import {
   createEmptyBoard,
   createRandomBoard,
+  getTileCount,
   indexToPoint,
   isSolved,
   pressTile,
   solveLightsOut,
   type Board,
+  type BoardDimensions,
 } from './lightsOut';
 
-const initialSize = 5;
+const initialDimensions = { rows: 5, cols: 5 };
+const maxVisibleTiles = 225;
 
 export function App() {
-  const [size, setSize] = useState(initialSize);
-  const [board, setBoard] = useState<Board>(() => createRandomBoard(initialSize));
+  const [dimensions, setDimensions] = useState<BoardDimensions>(initialDimensions);
+  const [board, setBoard] = useState<Board>(() => createRandomBoard(initialDimensions));
   const [solution, setSolution] = useState<number[]>([]);
   const [message, setMessage] = useState('Start by solving this random 5 x 5 board.');
   const solved = isSolved(board);
+  const tileCount = getTileCount(dimensions);
 
-  function changeSize(nextSize: number) {
-    setSize(nextSize);
-    setBoard(createRandomBoard(nextSize));
+  function changeDimension(field: keyof BoardDimensions, value: number) {
+    const safeValue = Math.max(1, Math.floor(value) || 1);
+    const nextDimensions = { ...dimensions, [field]: safeValue };
+
+    setDimensions(nextDimensions);
+    setBoard(createRandomBoard(nextDimensions));
     setSolution([]);
-    setMessage(`Generated a solvable ${nextSize} x ${nextSize} puzzle.`);
+    setMessage(`Generated a solvable ${nextDimensions.rows} x ${nextDimensions.cols} puzzle.`);
   }
 
   function handlePress(index: number) {
-    setBoard((currentBoard) => pressTile(currentBoard, index, size));
+    setBoard((currentBoard) => pressTile(currentBoard, index, dimensions));
     setSolution((currentSolution) => currentSolution.filter((pressIndex) => pressIndex !== index));
     setMessage('Board updated. Press Solve when you want a hint path.');
   }
 
   function solveBoard() {
-    const result = solveLightsOut(board, size);
+    const result = solveLightsOut(board, dimensions);
 
     if (!result.solvable) {
       setSolution([]);
@@ -56,19 +63,19 @@ export function App() {
       return;
     }
 
-    setBoard((currentBoard) => pressTile(currentBoard, nextPress, size));
+    setBoard((currentBoard) => pressTile(currentBoard, nextPress, dimensions));
     setSolution(remainingPresses);
     setMessage(remainingPresses.length === 0 ? 'Solution applied.' : `${remainingPresses.length} press(es) left.`);
   }
 
   function randomizeBoard() {
-    setBoard(createRandomBoard(size));
+    setBoard(createRandomBoard(dimensions));
     setSolution([]);
-    setMessage(`Generated a solvable ${size} x ${size} puzzle.`);
+    setMessage(`Generated a solvable ${dimensions.rows} x ${dimensions.cols} puzzle.`);
   }
 
   function clearBoard() {
-    setBoard(createEmptyBoard(size));
+    setBoard(createEmptyBoard(dimensions));
     setSolution([]);
     setMessage('Cleared the board. Click tiles to make your own puzzle.');
   }
@@ -90,14 +97,22 @@ export function App() {
       <section className="game-panel" aria-label="Lights Out game">
         <div className="toolbar">
           <label>
-            Board size
-            <select value={size} onChange={(event) => changeSize(Number(event.target.value))}>
-              {[3, 4, 5, 6, 7].map((nextSize) => (
-                <option key={nextSize} value={nextSize}>
-                  {nextSize} x {nextSize}
-                </option>
-              ))}
-            </select>
+            Rows
+            <input
+              min="1"
+              type="number"
+              value={dimensions.rows}
+              onChange={(event) => changeDimension('rows', Number(event.target.value))}
+            />
+          </label>
+          <label>
+            Columns
+            <input
+              min="1"
+              type="number"
+              value={dimensions.cols}
+              onChange={(event) => changeDimension('cols', Number(event.target.value))}
+            />
           </label>
           <button type="button" onClick={randomizeBoard}>
             Random
@@ -107,9 +122,12 @@ export function App() {
           </button>
         </div>
 
-        <div className="board" style={{ '--board-size': size } as CSSProperties}>
+        <div
+          className={`board ${tileCount > maxVisibleTiles ? 'board-compact' : ''}`}
+          style={{ '--board-cols': dimensions.cols } as CSSProperties}
+        >
           {board.map((isOn, index) => {
-            const point = indexToPoint(index, size);
+            const point = indexToPoint(index, dimensions);
             const hintNumber = solution.indexOf(index) + 1;
 
             return (

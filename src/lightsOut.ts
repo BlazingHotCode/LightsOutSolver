@@ -1,27 +1,36 @@
 export type Board = boolean[];
 
+export type BoardDimensions = {
+  rows: number;
+  cols: number;
+};
+
 export type SolveResult = {
   presses: number[];
   solvable: boolean;
 };
 
-export function createEmptyBoard(size: number): Board {
-  return Array.from({ length: size * size }, () => false);
+export function getTileCount(dimensions: BoardDimensions) {
+  return dimensions.rows * dimensions.cols;
 }
 
-export function indexToPoint(index: number, size: number) {
+export function createEmptyBoard(dimensions: BoardDimensions): Board {
+  return Array.from({ length: getTileCount(dimensions) }, () => false);
+}
+
+export function indexToPoint(index: number, dimensions: BoardDimensions) {
   return {
-    row: Math.floor(index / size),
-    col: index % size,
+    row: Math.floor(index / dimensions.cols),
+    col: index % dimensions.cols,
   };
 }
 
-export function pointToIndex(row: number, col: number, size: number) {
-  return row * size + col;
+export function pointToIndex(row: number, col: number, dimensions: BoardDimensions) {
+  return row * dimensions.cols + col;
 }
 
-export function getAffectedIndexes(index: number, size: number) {
-  const { row, col } = indexToPoint(index, size);
+export function getAffectedIndexes(index: number, dimensions: BoardDimensions) {
+  const { row, col } = indexToPoint(index, dimensions);
   const points = [
     [row, col],
     [row - 1, col],
@@ -31,27 +40,30 @@ export function getAffectedIndexes(index: number, size: number) {
   ];
 
   return points
-    .filter(([nextRow, nextCol]) => nextRow >= 0 && nextRow < size && nextCol >= 0 && nextCol < size)
-    .map(([nextRow, nextCol]) => pointToIndex(nextRow, nextCol, size));
+    .filter(
+      ([nextRow, nextCol]) =>
+        nextRow >= 0 && nextRow < dimensions.rows && nextCol >= 0 && nextCol < dimensions.cols,
+    )
+    .map(([nextRow, nextCol]) => pointToIndex(nextRow, nextCol, dimensions));
 }
 
-export function pressTile(board: Board, index: number, size: number): Board {
+export function pressTile(board: Board, index: number, dimensions: BoardDimensions): Board {
   const nextBoard = [...board];
 
-  for (const affectedIndex of getAffectedIndexes(index, size)) {
+  for (const affectedIndex of getAffectedIndexes(index, dimensions)) {
     nextBoard[affectedIndex] = !nextBoard[affectedIndex];
   }
 
   return nextBoard;
 }
 
-export function createRandomBoard(size: number): Board {
-  let board = createEmptyBoard(size);
-  const totalTiles = size * size;
+export function createRandomBoard(dimensions: BoardDimensions): Board {
+  let board = createEmptyBoard(dimensions);
+  const totalTiles = getTileCount(dimensions);
 
   for (let index = 0; index < totalTiles; index += 1) {
     if (Math.random() > 0.5) {
-      board = pressTile(board, index, size);
+      board = pressTile(board, index, dimensions);
     }
   }
 
@@ -62,9 +74,9 @@ export function isSolved(board: Board) {
   return board.every((isOn) => !isOn);
 }
 
-export function solveLightsOut(board: Board, size: number): SolveResult {
-  const totalTiles = size * size;
-  const matrix = buildAugmentedMatrix(board, size);
+export function solveLightsOut(board: Board, dimensions: BoardDimensions): SolveResult {
+  const totalTiles = getTileCount(dimensions);
+  const matrix = buildAugmentedMatrix(board, dimensions);
   const pivotColumns: number[] = [];
   let pivotRow = 0;
 
@@ -114,13 +126,13 @@ export function solveLightsOut(board: Board, size: number): SolveResult {
   };
 }
 
-function buildAugmentedMatrix(board: Board, size: number) {
-  const totalTiles = size * size;
+function buildAugmentedMatrix(board: Board, dimensions: BoardDimensions) {
+  const totalTiles = getTileCount(dimensions);
 
   return Array.from({ length: totalTiles }, (_, tileIndex) => {
     const row = Array.from({ length: totalTiles + 1 }, () => 0);
 
-    for (const pressIndex of getAffectedIndexes(tileIndex, size)) {
+    for (const pressIndex of getAffectedIndexes(tileIndex, dimensions)) {
       row[pressIndex] = 1;
     }
 

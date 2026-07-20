@@ -25,13 +25,12 @@ body {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
 button,
-select {
+input {
   border: 0;
 }
 
@@ -137,13 +136,17 @@ label {
   text-transform: uppercase;
 }
 
-select,
+input,
 .toolbar button,
 .actions button {
   border-radius: 999px;
   padding: 12px 16px;
   color: #e0f2fe;
   background: rgba(30, 41, 59, 0.9);
+}
+
+input {
+  width: 112px;
 }
 
 .primary-action {
@@ -153,13 +156,18 @@ select,
 }
 
 .board {
-  --board-size: 5;
+  --board-cols: 5;
   display: grid;
-  grid-template-columns: repeat(var(--board-size), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
   gap: clamp(7px, 1.5vw, 12px);
   border-radius: 28px;
   padding: clamp(12px, 2.4vw, 18px);
   background: rgba(2, 6, 23, 0.55);
+  overflow: auto;
+}
+
+.board-compact {
+  gap: 4px;
 }
 
 .tile {
@@ -217,7 +225,7 @@ select,
     flex-direction: column;
   }
 
-  select,
+input,
   .toolbar button,
   .actions button {
     width: 100%;
