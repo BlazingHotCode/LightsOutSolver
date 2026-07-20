@@ -14,11 +14,13 @@ import {
 
 const initialDimensions = { rows: 5, cols: 5 };
 const maxVisibleTiles = 225;
+type Mode = 'setup' | 'play';
 
 export function App() {
   const [dimensions, setDimensions] = useState<BoardDimensions>(initialDimensions);
   const [board, setBoard] = useState<Board>(() => createRandomBoard(initialDimensions));
   const [solution, setSolution] = useState<number[]>([]);
+  const [mode, setMode] = useState<Mode>('play');
   const [message, setMessage] = useState('Start by solving this random 5 x 5 board.');
   const solved = isSolved(board);
   const tileCount = getTileCount(dimensions);
@@ -34,9 +36,28 @@ export function App() {
   }
 
   function handlePress(index: number) {
+    if (mode === 'setup') {
+      setBoard((currentBoard) => currentBoard.map((isOn, tileIndex) => (tileIndex === index ? !isOn : isOn)));
+      setSolution([]);
+      setMessage('Starting position updated. Press Start playing when it is ready.');
+      return;
+    }
+
     setBoard((currentBoard) => pressTile(currentBoard, index, dimensions));
     setSolution((currentSolution) => currentSolution.filter((pressIndex) => pressIndex !== index));
     setMessage('Board updated. Press Solve when you want a hint path.');
+  }
+
+  function enterSetupMode() {
+    setMode('setup');
+    setSolution([]);
+    setMessage('Setup mode: click individual lights to choose the starting position.');
+  }
+
+  function startPlaying() {
+    setMode('play');
+    setSolution([]);
+    setMessage('Playing from your chosen starting position. Press Solve for the solution.');
   }
 
   function solveBoard() {
@@ -71,13 +92,15 @@ export function App() {
   function randomizeBoard() {
     setBoard(createRandomBoard(dimensions));
     setSolution([]);
+    setMode('play');
     setMessage(`Generated a solvable ${dimensions.rows} x ${dimensions.cols} puzzle.`);
   }
 
   function clearBoard() {
     setBoard(createEmptyBoard(dimensions));
     setSolution([]);
-    setMessage('Cleared the board. Click tiles to make your own puzzle.');
+    setMode('setup');
+    setMessage('Cleared the board. Setup mode is on, so click lights to build a starting position.');
   }
 
   return (
@@ -89,7 +112,7 @@ export function App() {
           Click a tile to flip it and its neighbors. The solver uses binary Gaussian elimination to find a valid press pattern.
         </p>
         <div className="status-card">
-          <span>{solved ? 'Solved' : 'Playing'}</span>
+          <span>{mode === 'setup' ? 'Setup mode' : solved ? 'Solved' : 'Playing'}</span>
           <strong>{message}</strong>
         </div>
       </section>
@@ -119,6 +142,15 @@ export function App() {
           </button>
           <button type="button" onClick={clearBoard}>
             Clear
+          </button>
+        </div>
+
+        <div className="mode-switch" aria-label="Mode controls">
+          <button className={mode === 'setup' ? 'active-mode' : ''} type="button" onClick={enterSetupMode}>
+            Choose start
+          </button>
+          <button className={mode === 'play' ? 'active-mode' : ''} type="button" onClick={startPlaying}>
+            Start playing
           </button>
         </div>
 
@@ -154,7 +186,9 @@ export function App() {
         </div>
 
         <p className="hint-text">
-          Numbered tiles show one solution order. You can press them yourself or apply the next step automatically.
+          {mode === 'setup'
+            ? 'Setup mode changes one light at a time, so you can build any starting position exactly.'
+            : 'Numbered tiles show one solution order. You can press them yourself or apply the next step automatically.'}
         </p>
       </section>
     </main>
